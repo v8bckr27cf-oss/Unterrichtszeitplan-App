@@ -1,0 +1,907 @@
+<!doctype html>
+<!-- Unterrichtszeitplan · Autorin: Stefes -->
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="author" content="Stefes" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; font-src 'self' data:;" />
+<title>Unterrichtszeitplan Tool</title>
+<style>
+/* Unterrichtszeitplan: Gestaltung und Projekt von Stefes. */
+:root{--bg:#eef2f7;--card:#fff;--text:#1f2937;--muted:#6b7280;--line:#d1d5db;--accent:#2563eb;--danger:#ef4444;--shadow:0 14px 36px rgba(15,23,42,.12)}
+*{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+button,input,textarea,select{font:inherit}
+.screen{display:none;min-height:100vh}.screen.active{display:block}
+.setup-wrap{max-width:1100px;margin:0 auto;padding:34px 22px 60px}
+.setup-card{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:28px}
+h1{margin:0 0 8px;font-size:clamp(28px,4vw,44px)} .lead{margin:0 0 26px;color:var(--muted)}
+.top-grid{display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:end;margin-bottom:24px}
+.timing-row{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:16px;align-items:end;margin:0 0 12px;padding:18px;border-radius:16px;background:#dbeafe;border:1px solid #93c5fd}.timing-row input{width:100%;padding:12px 14px;border:1px solid #93c5fd;border-radius:12px;background:#fff}.timing-row .minutes-input{font-size:20px;font-weight:800}.timing-row label{color:#1e3a8a}.timing-summary{margin:0 0 24px}
+.subject-grid{display:grid;grid-template-columns:1fr 2fr 140px;gap:16px;margin-bottom:22px;align-items:end}
+.subject-grid input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff}.subject-grid input[type=color]{height:48px;padding:4px;cursor:pointer}
+label{font-weight:700;display:block;margin-bottom:8px}.minutes-input{width:100%;padding:14px 16px;border:1px solid var(--line);border-radius:12px;font-size:22px;font-weight:700}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px}.phase-table{width:100%;border-collapse:collapse;min-width:760px}.phase-table th,.phase-table td{padding:12px;border-bottom:1px solid #e5e7eb;vertical-align:top}.phase-table th{background:#f8fafc;text-align:left;font-size:14px}.phase-table tr:last-child td{border-bottom:0}.reserve-row td{background:#f8fafc}.reserve-row .reserve-fixed-title{font-weight:800;color:#374151;padding:10px 2px}.reserve-row .reserve-time{color:#94a3b8;text-align:center;font-weight:700}.reserve-row textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff;min-height:90px;resize:vertical}
+.phase-table input,.phase-table textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff}.phase-table textarea{min-height:90px;resize:vertical}.time-cell{width:120px}.color-cell{width:85px}.remove-cell{width:64px;text-align:center}.color-input{width:48px!important;height:42px;padding:2px!important}.icon-btn{border:0;background:#fee2e2;color:#991b1b;border-radius:10px;padding:10px 12px;cursor:pointer}
+.reserve-setup{margin-top:24px;padding:18px;border:1px solid var(--line);border-radius:16px;background:#f8fafc}.reserve-setup h2{margin:0 0 6px;font-size:20px}.reserve-setup p{margin:0 0 14px;color:var(--muted);font-size:14px}.reserve-grid{display:grid;grid-template-columns:minmax(180px,.35fr) minmax(280px,.65fr);gap:14px}.reserve-grid input,.reserve-grid textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff}.reserve-grid textarea{min-height:100px;resize:vertical}.setup-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}.btn{border:0;border-radius:12px;padding:13px 18px;font-weight:800;cursor:pointer}.btn.primary{background:var(--accent);color:#fff}.btn.secondary{background:#e5e7eb;color:#111827}.summary{margin-top:14px;color:var(--muted);font-size:14px}.summary.bad{color:#b91c1c;font-weight:700}.summary.good{color:#047857;font-weight:700}
+
+.lesson-wrap{min-height:100vh;display:grid;grid-template-columns:minmax(420px,1.05fr) minmax(360px,.95fr);gap:24px;padding:24px}
+.clock-card,.notes-card{background:var(--card);border-radius:24px;box-shadow:var(--shadow);padding:22px;min-height:calc(100vh - 48px)}
+.clock-card{display:flex;flex-direction:column;align-items:center;justify-content:center}.toolbar{width:100%;display:flex;justify-content:center;gap:12px;align-items:center;margin-bottom:12px}.toolbar h2{margin:0;font-size:22px}.phase-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.3fr);gap:clamp(5px,1vw,10px);align-items:stretch;width:100%;margin:2px 0 14px}.phase-actions .phase-adjust-btn{min-width:0;line-height:1.35;overflow-wrap:anywhere}.phase-adjust-btn{border:0;border-radius:12px;padding:11px 15px;font-weight:800;cursor:pointer;background:#eef2ff;color:#1e3a8a}#newPhaseBtn{background:#ecfdf5;color:#065f46}#originalPlanBtn{background:linear-gradient(135deg,#fff7ed,#ffedd5);color:#9a3412;box-shadow:inset 0 0 0 1px #fed7aa,0 3px 8px rgba(194,65,12,.08);transition:background .15s ease,box-shadow .15s ease}#originalPlanBtn:hover:not(:disabled){background:linear-gradient(135deg,#ffedd5,#fed7aa);box-shadow:inset 0 0 0 1px #fdba74,0 4px 10px rgba(194,65,12,.12)}#originalPlanBtn:focus-visible{outline:3px solid #fb923c;outline-offset:3px}@media(max-width:600px){.phase-actions .phase-adjust-btn{font-size:clamp(11px,2.5vw,15px);padding:10px 6px}}.phase-adjust-status{font-size:13px;color:var(--muted);text-align:center;min-height:20px;margin:-6px 0 10px;max-width:610px}.phase-adjust-btn:disabled{opacity:.45;cursor:not-allowed}.mini-btn{border:0;background:#e5e7eb;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer}.bottom-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;width:100%;margin-top:18px;padding-top:16px;border-top:1px solid #e5e7eb}.bottom-actions .mini-btn{padding:11px 16px}#editBottomBtn{background:#e0f2fe;color:#075985}
+.clock-shell{position:relative;width:min(70vw,610px);max-width:100%;aspect-ratio:1/1;touch-action:none;user-select:none}.clock-canvas{width:100%;height:100%;display:block}.time-readout{font-size:clamp(28px,5vw,54px);font-weight:900;margin-top:8px;letter-spacing:-.03em}.phase-name{font-size:20px;font-weight:800;margin-top:4px}.controls{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap;justify-content:center}.control-btn{border:0;border-radius:14px;padding:14px 24px;font-weight:900;cursor:pointer}.start{background:#111827;color:#fff}.reset{background:#e5e7eb;color:#111827}
+.notes-card{display:flex;flex-direction:column}.notes-card h3{font-size:26px;margin:0 0 4px}.notes-meta{color:var(--muted);margin-bottom:12px}
+.format-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding:9px 10px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px}.format-toolbar button,.format-toolbar select{border:1px solid #d1d5db;background:#fff;border-radius:9px;padding:7px 10px;font-weight:700;cursor:pointer}.format-toolbar input[type=color]{width:38px;height:34px;border:1px solid #d1d5db;border-radius:8px;padding:2px;background:#fff}.format-label{font-size:12px;color:var(--muted);font-weight:700}
+.notes-area{flex:1;width:100%;border:1px solid #cbd5e1;background:#fffdf3;border-radius:18px;padding:20px;font-size:18px;line-height:1.5;overflow:auto;min-height:320px;outline:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.02)}.notes-area:focus{border-color:#94a3b8;box-shadow:0 0 0 3px rgba(148,163,184,.18)}.notes-footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px;color:var(--muted);font-size:13px}.reserve-card{margin-top:16px;padding:16px;border:1px dashed #cbd5e1;border-radius:16px;background:#f8fafc}.reserve-card h4{margin:0 0 4px;font-size:18px}.reserve-card .reserve-label{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.reserve-card .reserve-title{font-weight:800;margin:3px 0 8px}.reserve-notes{min-height:90px;background:#fff;border:1px solid #d1d5db;border-radius:12px;padding:12px;outline:none;line-height:1.45}.reserve-notes:focus{border-color:#94a3b8}
+.legend{width:100%;display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;justify-content:center}.legend-item{display:flex;align-items:center;gap:6px;font-size:13px;background:#f8fafc;border-radius:999px;padding:6px 10px}.dot{width:10px;height:10px;border-radius:50%}
+
+.setup-heading-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:4px}.setup-heading-row h1{margin:0}.plans-btn{border:0;border-radius:11px;padding:10px 15px;font-weight:800;cursor:pointer;background:#dbeafe;color:#1d4ed8;white-space:nowrap}.lesson-topnav{width:100%;display:flex;justify-content:flex-start;gap:7px;flex-wrap:wrap;margin-bottom:4px}.lesson-plans-btn{border:0;border-radius:9px;padding:6px 10px;font-size:12px;font-weight:800;cursor:pointer;background:#dbeafe;color:#1d4ed8}.lesson-edit-btn{border:0;border-radius:9px;padding:6px 10px;font-size:12px;font-weight:800;cursor:pointer;background:#e0f2fe;color:#075985}.lesson-new-btn{border:0;border-radius:9px;padding:6px 10px;font-size:12px;font-weight:800;cursor:pointer;background:#e0f2fe;color:#075985}
+.plans-wrap{max-width:1280px;margin:0 auto;padding:28px 22px 60px}.plans-card{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:26px}.plans-header{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px}.plans-header h1{margin:0}.plans-header-actions{display:flex;gap:8px;flex-wrap:wrap}.view-toggle{display:flex;gap:6px;background:#eef2f7;padding:5px;border-radius:12px}.view-toggle button{border:0;background:transparent;padding:8px 13px;border-radius:9px;font-weight:800;cursor:pointer;color:#475569}.view-toggle button.active{background:#2563eb;color:white}.calendar-nav{display:flex;align-items:center;gap:8px}.calendar-nav button{border:0;background:#e5e7eb;border-radius:9px;padding:8px 11px;font-weight:800;cursor:pointer}.calendar-title{font-weight:900;min-width:210px;text-align:center}.week-grid{display:grid;grid-template-columns:repeat(7,minmax(145px,1fr));gap:10px;overflow-x:auto}.day-column{min-height:390px;border:1px solid #e2e8f0;border-radius:14px;background:#f8fafc;padding:10px}.day-column.today{border-color:#60a5fa;box-shadow:inset 0 0 0 1px #60a5fa}.day-head{font-size:13px;font-weight:900;margin-bottom:10px;color:#475569}.day-number{font-size:22px;color:#111827;display:block}.plan-chip{position:relative;background:white;border:1px solid #bfdbfe;border-left:6px solid var(--plan-color,#2563eb);border-radius:10px;padding:9px 34px 9px 9px;margin:8px 0;cursor:pointer;box-shadow:0 2px 8px rgba(15,23,42,.05)}.plan-chip:hover{background:#eff6ff}.plan-time{font-size:12px;font-weight:900;color:var(--plan-color,#2563eb)}.plan-subject{font-weight:900;margin-top:2px}.plan-topic{font-size:12px;color:#64748b;margin-top:2px;line-height:1.25}.plan-delete{position:absolute;right:7px;top:7px;border:0;background:#fee2e2;color:#b91c1c;width:24px;height:24px;border-radius:7px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}.plan-delete:hover{background:#fecaca}.new-plan-btn{background:#2563eb!important;color:#fff!important}.setup-title-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}.month-weekday{font-size:12px;font-weight:900;color:#64748b;text-align:center;padding:5px}.month-day{min-height:118px;border:1px solid #e2e8f0;border-radius:12px;padding:8px;background:#fff}.month-day.muted{background:#f8fafc;color:#94a3b8}.month-day.today{border-color:#60a5fa;box-shadow:inset 0 0 0 1px #60a5fa}.month-date{font-weight:900;font-size:13px;margin-bottom:5px}.month-plan{font-size:11px;background:#eff6ff;border-left:5px solid var(--plan-color,#2563eb);border-radius:7px;padding:5px 6px;margin:4px 0;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.plans-empty{padding:34px;text-align:center;color:#64748b;border:1px dashed #cbd5e1;border-radius:14px;margin-top:14px}
+
+.plan-sidebar{position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:50;display:flex;align-items:stretch;max-height:76vh}.plan-sidebar-panel{width:285px;background:#fff;border:1px solid #dbeafe;border-left:0;border-radius:0 18px 18px 0;box-shadow:0 12px 30px rgba(15,23,42,.16);display:flex;flex-direction:column;overflow:hidden;transition:width .22s ease,opacity .22s ease}.plan-sidebar.collapsed .plan-sidebar-panel{width:0;opacity:0;border-width:0}.plan-sidebar-toggle{align-self:center;border:0;background:#2563eb;color:#fff;width:34px;height:72px;border-radius:0 12px 12px 0;font-weight:900;font-size:18px;cursor:pointer;box-shadow:0 6px 16px rgba(37,99,235,.25)}.plan-sidebar-head{padding:14px 14px 10px;font-weight:900;border-bottom:1px solid #e5e7eb;background:#eff6ff}.plan-sidebar-list{overflow:auto;padding:8px}.sidebar-plan{width:100%;border:1px solid #e2e8f0;background:#fff;border-radius:11px;padding:10px 11px;margin:5px 0;text-align:left;cursor:pointer}.sidebar-plan:hover{background:#eff6ff;border-color:#93c5fd}.sidebar-plan.active{background:#dbeafe;border-color:#60a5fa}.sidebar-plan-main{font-weight:900;font-size:13px;color:#1f2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sidebar-plan-meta{font-size:11px;color:#64748b;margin-top:4px}.sidebar-empty{padding:16px 10px;color:#94a3b8;font-size:12px;line-height:1.4}.sidebar-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--plan-color,#2563eb);margin-right:6px;vertical-align:1px}
+@media (max-width:900px){.top-grid,.reserve-grid,.subject-grid,.timing-row{grid-template-columns:1fr}.lesson-wrap{grid-template-columns:1fr}.clock-card,.notes-card{min-height:auto}.notes-area{min-height:320px}.clock-shell{width:min(92vw,560px)}.setup-heading-row{align-items:flex-start}.week-grid{grid-template-columns:repeat(7,180px)}.month-grid{min-width:760px}.plans-card{overflow-x:auto}.plan-sidebar{top:auto;bottom:16px;transform:none;max-height:65vh}.plan-sidebar-panel{width:min(78vw,285px)}}
+
+.table-top-actions{display:flex;justify-content:flex-start;align-items:center;gap:12px;margin:14px 0 10px}
+
+
+/* Electron/Desktop */
+html,body{overscroll-behavior:none}
+body.electron-app{background:#e9eef5}
+body.electron-app button,
+body.electron-app input,
+body.electron-app textarea,
+body.electron-app select{-webkit-app-region:no-drag}
+body.electron-app .setup-card,
+body.electron-app .plans-card,
+body.electron-app .clock-card,
+body.electron-app .notes-card{box-shadow:0 10px 30px rgba(15,23,42,.10)}
+@media (min-width:1200px){
+  body.electron-app .setup-wrap{max-width:1220px}
+  body.electron-app .plans-wrap{max-width:1440px}
+}
+
+/* Schriftfarbauswahl · Unterrichtszeitplan von Stefes. */
+.font-color-control{position:relative;display:inline-flex}
+.format-toolbar .font-color-trigger{display:flex;align-items:center;gap:7px;padding:6px 8px;min-height:35px;background:#fff}
+.font-color-trigger .fc-trigger-chip{display:block;width:23px;height:23px;border-radius:5px;border:1px solid rgba(0,0,0,.12);background:#1f2937}
+.font-color-trigger .fc-chevron{font-size:12px;color:#64748b}
+.font-color-panel{position:fixed;z-index:200;width:284px;max-width:calc(100vw - 24px);max-height:calc(100vh - 24px);overflow-y:auto;padding:14px;background:#fff;color:#1f2937;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 10px 36px rgba(15,23,42,.18);font-size:13px}
+.font-color-panel[hidden]{display:none!important}
+.fc-panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;font-weight:800}
+.format-toolbar .fc-close{padding:0;width:26px;height:26px;background:transparent;border:0;color:#64748b;font-size:20px;line-height:1}
+.fc-saturation{position:relative;width:100%;height:150px;border-radius:7px;background:linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(217,100%,50%));touch-action:none;user-select:none;cursor:crosshair}
+.fc-saturation:focus-visible{outline:3px solid #93c5fd;outline-offset:3px}
+.fc-saturation-handle{position:absolute;width:12px;height:12px;transform:translate(-50%,-50%);border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.35);pointer-events:none}
+.fc-sliders{display:grid;grid-template-columns:32px minmax(0,1fr);align-items:center;gap:12px;margin:14px 0}
+.fc-color-preview{width:32px;height:32px;border-radius:6px;overflow:hidden;border:1px solid #e5e7eb;background:conic-gradient(#ddd 25%,#fff 0 50%,#ddd 0 75%,#fff 0) 0 0/10px 10px}
+.fc-color-preview span{display:block;width:100%;height:100%;background:#1f2937}
+.fc-slider-stack{display:grid;gap:12px}
+.font-color-panel input[type=range]{display:block;appearance:none;-webkit-appearance:none;width:100%;height:8px;margin:0;border:0;border-radius:5px;cursor:pointer;touch-action:pan-y}
+#fontHueInput{background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
+#fontAlphaInput{background:linear-gradient(to right,transparent,#1f2937),conic-gradient(#ddd 25%,#fff 0 50%,#ddd 0 75%,#fff 0) 0 0/8px 8px}
+.font-color-panel input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:13px;height:13px;border:2px solid #fff;border-radius:50%;background:transparent;box-shadow:0 0 0 1px rgba(0,0,0,.28)}
+.font-color-panel input[type=range]::-moz-range-thumb{width:10px;height:10px;border:2px solid #fff;border-radius:50%;background:transparent;box-shadow:0 0 0 1px rgba(0,0,0,.28)}
+.fc-value-row{display:grid;grid-template-columns:65px minmax(0,1fr) 59px;gap:6px;align-items:center}
+.format-toolbar .fc-value-row select,.format-toolbar .fc-value-row input{width:100%;min-width:0;height:32px;padding:5px 7px;border:1px solid #d1d5db;border-radius:5px;background:#fff;color:#374151;font-size:12px;font-weight:500}
+.fc-opacity-field{position:relative}.fc-opacity-field input{padding-right:19px!important}.fc-opacity-field span{position:absolute;right:6px;top:8px;font-size:12px;color:#64748b;pointer-events:none}
+.font-color-panel input[aria-invalid=true]{border-color:#dc2626!important}
+.fc-divider{border:0;border-top:1px solid #eef0f3;margin:13px 0 10px}
+.fc-preset-label{display:flex;align-items:center;gap:7px;font-size:12px;color:#64748b;margin-bottom:10px;font-weight:600}
+.fc-preset-label span{font-size:11px}
+.fc-swatches{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:7px}
+.format-toolbar .fc-swatch{position:relative;width:100%;aspect-ratio:1;min-height:15px;border:1px solid rgba(0,0,0,.12);border-radius:3px;padding:0;background:var(--swatch-color);cursor:pointer}
+.format-toolbar .fc-swatch[aria-pressed=true]{outline:2px solid #2563eb;outline-offset:2px}
+.fc-recent-group{margin-top:13px}
+.fc-picker-status{min-height:0;margin-top:8px;font-size:12px;color:#64748b}
+.fc-picker-status:empty{display:none}
+@media(pointer:coarse){.fc-swatches{grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.format-toolbar .fc-swatch{min-height:34px}.font-color-panel input[type=range]{height:12px}.fc-slider-stack{gap:20px}.fc-sliders{margin:20px 0}.fc-saturation{height:155px}.format-toolbar .fc-close{width:34px;height:34px}.format-toolbar .fc-value-row input{font-size:16px;height:38px}}
+
+
+/* Anordnung wie im Referenzbild: Palette links, genaue Farbauswahl rechts. */
+.font-color-panel{width:600px;padding:16px}
+.fc-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px}
+.fc-palette-column{padding-right:18px;border-right:1px solid #eef0f3}
+.fc-custom-column{min-width:0}
+.fc-saturation{height:auto;aspect-ratio:1;min-height:200px}
+.fc-swatches{grid-template-columns:repeat(8,minmax(0,1fr));gap:8px}
+.format-toolbar .fc-swatch{border-radius:5px;min-height:20px}
+.format-toolbar .fc-swatch[aria-pressed=true]::after{content:'✓';position:absolute;inset:0;display:grid;place-items:center;color:#fff;text-shadow:0 1px 3px #000;font-size:15px}
+.format-toolbar .fc-reset{display:flex;gap:9px;align-items:center;border:0;background:transparent;padding:0 0 13px;font-size:13px;font-weight:500}
+.fc-no-fill{position:relative;display:inline-block;width:21px;height:21px;border:1px solid #e5e7eb;border-radius:4px;background:#fff}
+.fc-no-fill::after{content:'';position:absolute;width:25px;height:2px;background:#ff1630;left:-3px;top:9px;transform:rotate(-45deg)}
+.fc-sliders{grid-template-columns:32px minmax(0,1fr) 24px;gap:10px}
+.format-toolbar .fc-eyedropper{display:grid;place-items:center;border:0;background:transparent;padding:0;color:#595959}
+.format-toolbar .fc-eyedropper:disabled{opacity:.3;cursor:not-allowed}
+.fc-recent-group{margin-top:20px}
+.fc-preset-label{color:#374151;font-size:13px;font-weight:500}
+@media(max-width:620px){.fc-body{grid-template-columns:1fr;gap:17px}.fc-palette-column{padding-right:0;border-right:0;border-bottom:1px solid #eef0f3;padding-bottom:15px}.fc-saturation{aspect-ratio:auto;height:190px;min-height:0}.font-color-panel{width:330px}.fc-swatches{gap:8px}.fc-recent-group{margin-top:14px}}
+@media(pointer:coarse){.fc-swatches{grid-template-columns:repeat(8,minmax(0,1fr));gap:5px}.format-toolbar .fc-swatch{min-height:24px}.fc-sliders{gap:10px}}
+
+</style>
+</head>
+<body>
+<section id="setupScreen" class="screen active">
+  <aside id="setupSidebar" class="plan-sidebar collapsed">
+    <div class="plan-sidebar-panel"><div class="plan-sidebar-head">Gespeicherte Stunden</div><div id="setupSidebarList" class="plan-sidebar-list"></div></div>
+    <button class="plan-sidebar-toggle" id="setupSidebarToggle" title="Stunden ein-/ausblenden">›</button>
+  </aside>
+  <div class="setup-wrap">
+    <div class="setup-card">
+      <div class="setup-heading-row">
+        <h1>Unterrichtszeitplan erstellen</h1>
+        <div class="setup-title-actions">
+          <button class="plans-btn new-plan-btn" id="newIndependentPlanBtn">+ Neuer Unterrichtszeitplan</button>
+          <button class="plans-btn" id="plansFromSetupBtn">Meine Pläne</button>
+        </div>
+      </div>
+      <div class="subject-grid">
+        <div>
+          <label for="subjectInput">Fach</label>
+          <input id="subjectInput" type="text" placeholder="z. B. Geschichte" />
+        </div>
+        <div>
+          <label for="topicInput">Thema der Stunde</label>
+          <input id="topicInput" type="text" placeholder="z. B. Ursachen der Französischen Revolution" />
+        </div>
+        <div>
+          <label for="lessonColorInput">Farbe der Stunde</label>
+          <input id="lessonColorInput" type="color" value="#2563eb" title="Farbe der Stunde" />
+        </div>
+      </div>
+      <div class="timing-row">
+        <div>
+          <label for="totalMinutes">Unterrichtszeit (Minuten)</label>
+          <input id="totalMinutes" class="minutes-input" type="number" min="1" max="240" value="45" />
+        </div>
+        <div>
+          <label for="lessonDateInput">Tag der Unterrichtsstunde</label>
+          <input id="lessonDateInput" type="date" />
+        </div>
+        <div>
+          <label for="lessonStartInput">Startuhrzeit</label>
+          <input id="lessonStartInput" type="time" />
+        </div>
+      </div>
+      <div id="timeSummary" class="summary timing-summary"></div>
+
+      <div class="table-top-actions" style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin:14px 0 10px;">
+        <button class="btn primary" id="saveOnlyBtn">Speichern</button>
+        <button class="btn" id="newPlanBtn" style="background:#dc2626;color:#fff;">Felder leeren</button>
+      </div>
+
+      <div class="table-wrap">
+        <table class="phase-table">
+          <thead><tr><th>Phase</th><th class="time-cell">Zeit (Min.)</th><th>Notizen / Was möchte ich sagen?</th><th class="color-cell">Farbe</th><th class="remove-cell"></th></tr></thead>
+          <tbody id="phaseBody"></tbody>
+        </table>
+      </div>
+
+      <div class="setup-actions">
+        <button class="btn secondary" id="addPhaseBtn">+ Phase hinzufügen</button>
+        <button class="btn primary" id="createBtn">Zeitplan speichern und durchführen</button>
+      </div>
+
+
+
+    </div>
+  </div>
+</section>
+
+<section id="lessonScreen" class="screen">
+  <aside id="lessonSidebar" class="plan-sidebar collapsed">
+    <div class="plan-sidebar-panel"><div class="plan-sidebar-head">Gespeicherte Stunden</div><div id="lessonSidebarList" class="plan-sidebar-list"></div></div>
+    <button class="plan-sidebar-toggle" id="lessonSidebarToggle" title="Stunden ein-/ausblenden">›</button>
+  </aside>
+  <div class="lesson-wrap">
+    <div class="clock-card">
+      <div class="lesson-topnav">
+        <button class="lesson-plans-btn" id="plansFromLessonBtn">Meine Pläne</button>
+        <button class="lesson-edit-btn" id="editBtn">Bearbeiten</button>
+        <button class="lesson-new-btn" id="newPlanFromLessonBtn">+ Neuen Zeitplan erstellen</button>
+      </div>
+      <div class="toolbar">
+        <h2 id="lessonTitle">Unterrichtszeitplan</h2>
+      </div>
+      <div id="lessonSchedule" class="lesson-schedule"></div>
+      <div class="phase-actions">
+        <button class="phase-adjust-btn" id="oldPhaseBtn">🐢 Alte Phase läuft noch</button>
+        <button class="phase-adjust-btn" id="originalPlanBtn" title="Ursprüngliche Phasenzeiten wiederherstellen; die Uhr läuft weiter.">↪️ Originaler Zeitplan</button>
+        <button class="phase-adjust-btn" id="newPhaseBtn">🏃 Die neue Phase hat angefangen</button>
+      </div>
+      <div id="phaseAdjustStatus" class="phase-adjust-status" role="status" aria-live="polite"></div>
+      <div class="clock-shell" id="clockShell"><canvas id="clockCanvas" class="clock-canvas" width="800" height="800"></canvas></div>
+      <div class="time-readout" id="timeReadout">00:00 / 45:00</div>
+      <div class="phase-name" id="phaseName">Einstieg</div>
+      <div class="controls">
+        <button id="startStopBtn" class="control-btn start">Start</button>
+        <button id="resetBtn" class="control-btn reset">Zurücksetzen</button>
+      </div>
+      <div id="legend" class="legend"></div>
+      <div class="bottom-actions">
+        <button class="mini-btn" id="downloadBtn">Zwischenstand speichern</button>
+        <button class="mini-btn" id="editBottomBtn">Bearbeiten</button>
+      </div>
+    </div>
+    <div class="notes-card">
+      <h3 id="notesHeading">Notizzettel</h3>
+      <div id="notesMeta" class="notes-meta"></div>
+      <div class="format-toolbar">
+        <button type="button" id="boldBtn" title="Fett"><strong>B</strong></button>
+        <span class="format-label">Größe</span>
+        <select id="fontSizeSelect" title="Schriftgröße">
+          <option value="3">normal</option>
+          <option value="2">klein</option>
+          <option value="4">groß</option>
+          <option value="5">sehr groß</option>
+          <option value="6">Überschrift</option>
+        </select>
+        <span class="format-label">Farbe</span>
+                <div class="font-color-control" id="fontColorControl">
+          <button type="button" class="font-color-trigger" id="fontColorButton" title="Schriftfarbe auswählen" aria-label="Schriftfarbe auswählen" aria-haspopup="dialog" aria-expanded="false" aria-controls="fontColorPanel"><span class="fc-trigger-chip" id="fontColorChip"></span><span class="fc-chevron" aria-hidden="true">▾</span></button>
+          <div class="font-color-panel" id="fontColorPanel" role="dialog" aria-label="Schriftfarbe" hidden>
+            <div class="fc-panel-head"><span>Schriftfarbe</span><button class="fc-close" type="button" id="fontColorClose" aria-label="Farbauswahl schließen">×</button></div>
+            <div class="fc-body">
+              <div class="fc-palette-column">
+                <button class="fc-reset" type="button" id="fontColorReset"><span class="fc-no-fill" aria-hidden="true"></span>Standardfarbe</button>
+                <div class="fc-swatches" id="fontColorPresets" role="group" aria-label="Vorgegebene Schriftfarben"></div>
+                <div class="fc-recent-group" id="fontRecentGroup" hidden>
+                  <div class="fc-preset-label">Zuletzt verwendet</div>
+                  <div class="fc-swatches" id="fontColorRecent" role="group" aria-label="Zuletzt verwendete Farben"></div>
+                </div>
+              </div>
+              <div class="fc-custom-column">
+                <div class="fc-saturation" id="fontSaturation" role="slider" tabindex="0" aria-label="Sättigung und Helligkeit; Pfeiltasten zum Ändern" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="fc-saturation-handle" id="fontSaturationHandle"></span></div>
+                <div class="fc-sliders">
+                  <div class="fc-color-preview"><span id="fontColorPreview"></span></div>
+                  <div class="fc-slider-stack">
+                    <input id="fontHueInput" type="range" min="0" max="359" value="217" aria-label="Farbton" />
+                    <input id="fontAlphaInput" type="range" min="0" max="100" value="100" aria-label="Deckkraft" />
+                  </div>
+                  <button type="button" class="fc-eyedropper" id="fontEyeDropper" title="Farbe vom Bildschirm aufnehmen" aria-label="Farbe vom Bildschirm aufnehmen"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 5l4 4M13 7l4 4-9 9H4v-4zM14 6l4-4 4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                </div>
+                <div class="fc-value-row">
+                  <select id="fontColorFormat" aria-label="Farbcode-Format"><option value="hex">HEX</option><option value="rgb">RGB</option></select>
+                  <input id="fontColorInput" type="text" value="#1F2937" spellcheck="false" aria-label="Farbcode" />
+                  <div class="fc-opacity-field"><input id="fontOpacityInput" type="number" min="0" max="100" value="100" aria-label="Deckkraft in Prozent" /><span aria-hidden="true">%</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="fc-picker-status" id="fontColorStatus" role="status" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+      <div id="notesArea" class="notes-area" contenteditable="true" spellcheck="true"></div>
+      <div class="notes-footer"><span>Notizen sind direkt bearbeitbar und formatierbar.</span><span id="saveStatus">gespeichert</span></div>
+      <div id="reserveCard" class="reserve-card" hidden>
+        <div class="reserve-label">Didaktische Reserve</div>
+        <div id="reserveDisplayTitle" class="reserve-title"></div>
+        <div id="reserveDisplayNotes" class="reserve-notes" contenteditable="true" spellcheck="true"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section id="plansScreen" class="screen">
+  <div class="plans-wrap">
+    <div class="plans-card">
+      <div class="plans-header">
+        <div>
+          <h1>Meine Pläne</h1>
+          <p class="lead" style="margin:4px 0 0">Deine Unterrichtsplanungen in der Wochen- oder Monatsansicht.</p>
+        </div>
+        <div class="plans-header-actions">
+          <button class="btn primary" id="newPlanFromCalendarBtn">+ Neuer Unterrichtszeitplan</button>
+          <button class="btn secondary" id="plansBackBtn">Zurück</button>
+          <div class="view-toggle">
+            <button id="weekViewBtn" class="active">Woche</button>
+            <button id="monthViewBtn">Monat</button>
+          </div>
+        </div>
+      </div>
+      <div class="calendar-nav" style="justify-content:center;margin-bottom:16px">
+        <button id="calPrevBtn">‹</button>
+        <div id="calendarTitle" class="calendar-title"></div>
+        <button id="calTodayBtn">Heute</button>
+        <button id="calNextBtn">›</button>
+      </div>
+      <div id="calendarContent"></div>
+    </div>
+  </div>
+</section>
+
+<script>
+/**
+ * Unterrichtszeitplan
+ * Autorin: Stefes
+ * @author Stefes
+ */
+const isElectronApp=Boolean(window.electronAPI || (navigator.userAgent||'').toLowerCase().includes('electron'));
+if(isElectronApp)document.body.classList.add('electron-app');
+
+function desktopSetDirty(isDirty){
+  try{
+    if(window.electronAPI?.setDocumentEdited)window.electronAPI.setDocumentEdited(Boolean(isDirty));
+  }catch(e){}
+}
+function desktopSetTitle(){
+  const parts=[subject,topic].filter(Boolean);
+  document.title=(parts.length?parts.join(' · ')+' – ':'')+'Unterrichtszeitplan';
+  try{
+    if(window.electronAPI?.setWindowTitle)window.electronAPI.setWindowTitle(document.title);
+  }catch(e){}
+}
+const palette=['#60a5fa','#34d399','#fbbf24','#f472b6','#a78bfa','#fb7185','#22d3ee','#84cc16'];
+const defaults=[
+ {name:'Einstieg',minutes:5,notesHtml:'Begrüßung und kurzer Einstieg ins Thema.<br>Vorwissen aktivieren: Was wisst ihr bereits dazu?<br>Leitfrage der Stunde vorstellen.',color:palette[0]},
+ {name:'Erarbeitung',minutes:20,notesHtml:'Arbeitsauftrag kurz und verständlich erklären.<br>SuS bearbeiten die Aufgabe selbstständig oder in Gruppen.<br>Bei Bedarf gezielte Hilfestellungen geben.',color:palette[1]},
+ {name:'Anwendung',minutes:12,notesHtml:'Ergebnisse auf ein neues Beispiel übertragen.<br>Kurzer Austausch: Welche Lösung habt ihr gewählt und warum?<br>Unterschiedliche Lösungswege vergleichen.',color:palette[2]},
+ {name:'Sicherung',minutes:8,notesHtml:'Zentrale Ergebnisse gemeinsam sammeln.<br>Wichtigste Erkenntnis der Stunde festhalten.<br>Kurzer Ausblick auf die nächste Stunde.',color:palette[3]}
+];
+let subject=''; let topic=''; let lessonColor='#2563eb'; let lessonDate=''; let lessonStartTime=''; let phases=[]; let originalPhases=[]; let reserve={title:'',notesHtml:''}; let originalReserve={title:'',notesHtml:''}; let totalMinutes=45; let originalTotalMinutes=45; let elapsed=0; let running=false; let timerId=null; let scheduleWatchId=null; let drag=false; let lastPhaseIndex=-1; let extendedPhaseIndex=-1;
+let plansReturnScreen='setupScreen'; let calendarMode='week'; let calendarCursor=new Date(); let currentLibraryId='';
+const qs=s=>document.querySelector(s), phaseBody=qs('#phaseBody'), totalInput=qs('#totalMinutes'), summary=qs('#timeSummary');
+
+function addPhaseRow(data={name:'Neue Phase',minutes:5,notesHtml:'',color:palette[phaseBody.querySelectorAll('tr:not(.reserve-row)').length%palette.length]}){
+ const tr=document.createElement('tr');
+ tr.innerHTML=`<td><input class="p-name" value="${escapeAttr(data.name)}"></td><td><input class="p-min" type="number" min="1" max="240" value="${data.minutes}"></td><td><textarea class="p-notes">${escapeHtml(data.notes ?? htmlToText(data.notesHtml||''))}</textarea></td><td><input class="p-color color-input" type="color" value="${data.color}"></td><td class="remove-cell"><button class="icon-btn" title="Phase entfernen">×</button></td>`;
+ const ta=tr.querySelector('.p-notes'); ta.dataset.notesHtml=data.notesHtml ?? textToHtml(data.notes||''); ta.dataset.originalText=ta.value;
+ tr.querySelector('.icon-btn').onclick=()=>{tr.remove();updateSummary();};
+ tr.querySelectorAll('input,textarea').forEach(el=>el.addEventListener('input',updateSummary));
+ const reserveRow=phaseBody.querySelector('.reserve-row');
+ if(reserveRow) phaseBody.insertBefore(tr,reserveRow); else phaseBody.appendChild(tr);
+ updateSummary();
+}
+function addReserveRow(data={notesHtml:''}){
+ let existing=phaseBody.querySelector('.reserve-row'); if(existing)return existing;
+ const tr=document.createElement('tr'); tr.className='reserve-row';
+ tr.innerHTML=`<td><div class="reserve-fixed-title">Didaktische Reserve</div></td><td class="reserve-time">—</td><td><textarea class="reserve-notes-setup" placeholder=""></textarea></td><td></td><td class="remove-cell"><button class="icon-btn reserve-remove" title="Didaktische Reserve löschen">×</button></td>`;
+ const ta=tr.querySelector('.reserve-notes-setup'); ta.value=htmlToText(data.notesHtml||''); ta.dataset.notesHtml=data.notesHtml||''; ta.dataset.originalText=ta.value;
+ ta.addEventListener('input',()=>{ta.dataset.notesHtml=textToHtml(ta.value)});
+ tr.querySelector('.reserve-remove').onclick=()=>{tr.remove();reserve={title:'',notesHtml:''};originalReserve={title:'',notesHtml:''};};
+ phaseBody.appendChild(tr); return tr;
+}
+function escapeAttr(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function textToHtml(s){return escapeHtml(String(s)).replace(/\n/g,'<br>')}
+function htmlToText(html){const d=document.createElement('div');d.innerHTML=html||'';return d.innerText||''}
+function updateSummary(){
+ const total=Number(totalInput.value)||0; const used=[...document.querySelectorAll('.p-min')].reduce((a,e)=>a+(Number(e.value)||0),0); const diff=total-used;
+ summary.className='summary '+(diff===0?'good':'bad'); summary.textContent=diff===0?`Passt genau: ${used} Minuten verteilt.`:`Verplant: ${used} Min. · ${diff>0?diff+' Min. noch frei':Math.abs(diff)+' Min. zu viel'}`;
+}
+function collect(){
+ subject=qs('#subjectInput').value.trim(); topic=qs('#topicInput').value.trim(); lessonColor=qs('#lessonColorInput').value||'#2563eb'; lessonDate=qs('#lessonDateInput').value; lessonStartTime=qs('#lessonStartInput').value;
+ totalMinutes=Math.max(1,Number(totalInput.value)||45);
+ phases=[...phaseBody.querySelectorAll('tr:not(.reserve-row)')].map((tr,i)=>{const ta=tr.querySelector('.p-notes'); const preserve=ta.dataset.originalText===ta.value && ta.dataset.notesHtml!=null; return {name:tr.querySelector('.p-name').value.trim()||`Phase ${i+1}`,minutes:Math.max(1,Number(tr.querySelector('.p-min').value)||1),notesHtml:preserve?ta.dataset.notesHtml:textToHtml(ta.value),color:tr.querySelector('.p-color').value};});
+ const reserveTa=phaseBody.querySelector('.reserve-notes-setup'); reserve=reserveTa?{title:'Didaktische Reserve',notesHtml:(reserveTa.dataset.originalText===reserveTa.value && reserveTa.dataset.notesHtml!=null)?reserveTa.dataset.notesHtml:textToHtml(reserveTa.value)}:{title:'',notesHtml:''};
+ const sum=phases.reduce((a,p)=>a+p.minutes,0); if(sum!==totalMinutes){alert(`Die Phasen ergeben ${sum} Minuten, die Unterrichtseinheit aber ${totalMinutes} Minuten. Bitte passe die Zeiten an.`);return false} return true;
+}
+function createPlan(){if(!collect())return; desktopSetTitle(); originalPhases=phases.map(p=>({...p})); originalReserve={...reserve}; originalTotalMinutes=totalMinutes; elapsed=0;running=false;clearInterval(timerId);timerId=null;lastPhaseIndex=-1;extendedPhaseIndex=-1;qs('#phaseAdjustStatus').textContent='';buildLegend();showLesson();syncWithScheduledStart(true);render();savePlan();upsertCurrentPlanToLibrary();}
+function showLesson(){qs('#setupScreen').classList.remove('active');qs('#lessonScreen').classList.add('active');qs('#startStopBtn').textContent=running?'Stop':'Start';renderPlanSidebars();
+ const parts=[]; if(subject)parts.push(subject); if(topic)parts.push(topic);
+ qs('#lessonTitle').textContent=parts.length?parts.join(' · '):'Unterrichtszeitplan';
+ const scheduleText=formatScheduleLabel(); qs('#lessonSchedule').textContent=scheduleText; qs('#lessonSchedule').style.display=scheduleText?'block':'none';
+ renderReserve();}
+function showSetup(){closeFontColorPicker();running=false;clearInterval(scheduleWatchId);scheduleWatchId=null;qs('#subjectInput').value=subject||'';qs('#topicInput').value=topic||'';qs('#lessonColorInput').value=lessonColor||'#2563eb';qs('#lessonDateInput').value=lessonDate||'';qs('#lessonStartInput').value=lessonStartTime||'';clearInterval(timerId);timerId=null;phases.forEach((p,i)=>{const tr=phaseBody.children[i];if(tr){const ta=tr.querySelector('.p-notes');ta.value=htmlToText(p.notesHtml||'');ta.dataset.notesHtml=p.notesHtml||'';ta.dataset.originalText=ta.value;}});const reserveRow=phaseBody.querySelector('.reserve-row'); if(reserve.title||htmlToText(reserve.notesHtml||'').trim()){const rr=reserveRow||addReserveRow(reserve);const rta=rr.querySelector('.reserve-notes-setup');rta.value=htmlToText(reserve.notesHtml||'');rta.dataset.notesHtml=reserve.notesHtml||'';rta.dataset.originalText=rta.value;}else if(reserveRow){reserveRow.remove();}qs('#lessonScreen').classList.remove('active');qs('#setupScreen').classList.add('active');renderPlanSidebars();}
+function formatScheduleLabel(){
+ if(!lessonDate || !lessonStartTime)return '';
+ const d=new Date(`${lessonDate}T${lessonStartTime}:00`);
+ if(Number.isNaN(d.getTime()))return '';
+ return `${new Intl.DateTimeFormat('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'}).format(d)} · Beginn ${lessonStartTime} Uhr`;
+}
+function scheduledElapsedSeconds(){
+ if(!lessonDate || !lessonStartTime)return null;
+ const start=new Date(`${lessonDate}T${lessonStartTime}:00`);
+ if(Number.isNaN(start.getTime()))return null;
+ return (Date.now()-start.getTime())/1000;
+}
+function beginTimerLoop(){
+ clearInterval(scheduleWatchId); scheduleWatchId=null;
+ clearInterval(timerId); running=true; qs('#startStopBtn').textContent='Stop'; let last=Date.now();
+ timerId=setInterval(()=>{const now=Date.now();elapsed+=(now-last)/1000;last=now;if(elapsed>=totalMinutes*60){elapsed=totalMinutes*60;running=false;clearInterval(timerId);timerId=null;qs('#startStopBtn').textContent='Start'}render()},200);
+}
+function watchScheduledStart(){
+ clearInterval(scheduleWatchId);
+ scheduleWatchId=setInterval(()=>{
+   const diff=scheduledElapsedSeconds();
+   if(diff===null){clearInterval(scheduleWatchId);scheduleWatchId=null;return;}
+   if(diff>=0){
+     clearInterval(scheduleWatchId);scheduleWatchId=null;
+     elapsed=Math.min(diff,totalMinutes*60);
+     if(diff<totalMinutes*60)beginTimerLoop();
+     else{running=false;qs('#startStopBtn').textContent='Start';render();}
+   }
+ },250);
+}
+function syncWithScheduledStart(autoRun=false){
+ const diff=scheduledElapsedSeconds();
+ if(diff===null)return false;
+ clearInterval(timerId); timerId=null; clearInterval(scheduleWatchId); scheduleWatchId=null; running=false;
+ if(diff<0){
+   elapsed=0;qs('#startStopBtn').textContent='Start';
+   if(autoRun)watchScheduledStart();
+   return true;
+ }
+ elapsed=Math.min(diff,totalMinutes*60);
+ if(autoRun && diff<totalMinutes*60)beginTimerLoop(); else qs('#startStopBtn').textContent='Start';
+ return true;
+}
+function prettyMinutes(n){const r=Math.round(n*10)/10;return Number.isInteger(r)?String(r):r.toFixed(1)}
+function buildLegend(){qs('#legend').innerHTML=phases.map(p=>`<span class="legend-item"><span class="dot" style="background:${p.color}"></span>${escapeHtml(p.name)} · ${prettyMinutes(p.minutes)}m</span>`).join('')}
+function phaseAt(sec){let m=sec/60, acc=0;for(let i=0;i<phases.length;i++){if(m < acc+phases[i].minutes)return i;acc+=phases[i].minutes}if(acc<totalMinutes && ((reserve.title||'').trim() || htmlToText(reserve.notesHtml||'').trim()))return phases.length;return Math.max(0,phases.length-1)}
+function phaseStartMin(index){let n=0;for(let i=0;i<index;i++)n+=phases[i].minutes;return n}
+function format(sec){sec=Math.max(0,Math.round(sec));const m=Math.floor(sec/60),s=sec%60;return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
+function render(){drawClock();qs('#timeReadout').textContent=`${format(elapsed)} / ${format(totalMinutes*60)}`;const idx=phaseAt(Math.min(elapsed,totalMinutes*60-.001));if(idx!==lastPhaseIndex){lastPhaseIndex=idx;loadNotes(idx)}qs('#phaseName').textContent=idx===phases.length?(reserve.title||'Didaktische Reserve'):(phases[idx]?.name||'');updatePhaseAdjustButtons(idx);}
+function loadNotes(idx){closeFontColorPicker();if(idx===phases.length){const regular=phases.reduce((a,p)=>a+p.minutes,0),avail=Math.max(0,totalMinutes-regular);qs('#notesHeading').textContent=reserve.title||'Didaktische Reserve';qs('#notesMeta').textContent=`Didaktische Reserve · aktuell ${prettyMinutes(avail)} Minuten verfügbar`;qs('#notesArea').innerHTML=reserve.notesHtml||'';return;}const p=phases[idx];qs('#notesHeading').textContent=p.name;qs('#notesMeta').textContent=`Phase ${idx+1} von ${phases.length} · ${prettyMinutes(p.minutes)} Minuten`;qs('#notesArea').innerHTML=p.notesHtml||'';}
+qs('#notesArea').addEventListener('input',()=>{const idx=phaseAt(Math.min(elapsed,totalMinutes*60-.001));if(idx===phases.length){reserve.notesHtml=qs('#notesArea').innerHTML;reserve.title='Didaktische Reserve';originalReserve.notesHtml=reserve.notesHtml;originalReserve.title='Didaktische Reserve';const rta=phaseBody.querySelector('.reserve-notes-setup');if(rta){rta.value=htmlToText(reserve.notesHtml||'');rta.dataset.notesHtml=reserve.notesHtml||'';rta.dataset.originalText=rta.value;}renderReserve();savePlan();qs('#saveStatus').textContent='gespeichert';return;}if(phases[idx]){phases[idx].notesHtml=qs('#notesArea').innerHTML;if(originalPhases[idx])originalPhases[idx].notesHtml=phases[idx].notesHtml;syncSetupNotes(idx);savePlan();qs('#saveStatus').textContent='gespeichert';}})
+function syncSetupNotes(idx){const tr=phaseBody.children[idx];if(tr){const ta=tr.querySelector('.p-notes');ta.value=htmlToText(phases[idx].notesHtml||'');ta.dataset.notesHtml=phases[idx].notesHtml||'';ta.dataset.originalText=ta.value;}}
+function renderReserve(){const card=qs('#reserveCard');const has=Boolean((reserve.title||'').trim() || htmlToText(reserve.notesHtml||'').trim());card.hidden=!has;if(!has)return;qs('#reserveDisplayTitle').textContent=reserve.title||'Didaktische Reserve';qs('#reserveDisplayNotes').innerHTML=reserve.notesHtml||'';}
+qs('#reserveDisplayNotes').addEventListener('input',()=>{reserve.notesHtml=qs('#reserveDisplayNotes').innerHTML;reserve.title='Didaktische Reserve';originalReserve.notesHtml=reserve.notesHtml;originalReserve.title='Didaktische Reserve';const rta=phaseBody.querySelector('.reserve-notes-setup');if(rta){rta.value=htmlToText(reserve.notesHtml||'');rta.dataset.notesHtml=reserve.notesHtml||'';rta.dataset.originalText=rta.value;}savePlan();});
+
+function drawClock(){
+ const c=qs('#clockCanvas'),ctx=c.getContext('2d'),W=c.width,H=c.height,cx=W/2,cy=H/2;ctx.clearRect(0,0,W,H);
+ const outerR=330, ringW=34, faceR=282;
+ // outer phase ring
+ let start=-Math.PI/2; phases.forEach(p=>{const a=(p.minutes/totalMinutes)*Math.PI*2;ctx.beginPath();ctx.arc(cx,cy,outerR,start,start+a);ctx.strokeStyle=p.color;ctx.lineWidth=ringW;ctx.stroke();start+=a;});const regularMinutes=phases.reduce((a,p)=>a+p.minutes,0);const reserveMinutes=Math.max(0,totalMinutes-regularMinutes);if(reserveMinutes>0){const a=(reserveMinutes/totalMinutes)*Math.PI*2;ctx.beginPath();ctx.arc(cx,cy,outerR,start,start+a);ctx.strokeStyle='#94a3b8';ctx.lineWidth=ringW;ctx.stroke();}
+ // face
+ ctx.beginPath();ctx.arc(cx,cy,faceR,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#111827';ctx.lineWidth=3;ctx.stroke();
+ // elapsed red sector
+ const ratio=Math.min(1,elapsed/(totalMinutes*60)); if(ratio>0){ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,faceR-3,-Math.PI/2,-Math.PI/2+ratio*Math.PI*2);ctx.closePath();ctx.fillStyle='rgba(239,68,68,.34)';ctx.fill();}
+ // minute ticks
+ for(let i=0;i<=totalMinutes;i++){const ang=-Math.PI/2+(i/totalMinutes)*Math.PI*2;const major=i%5===0;const r1=faceR-(major?24:13),r2=faceR-3;ctx.beginPath();ctx.moveTo(cx+Math.cos(ang)*r1,cy+Math.sin(ang)*r1);ctx.lineTo(cx+Math.cos(ang)*r2,cy+Math.sin(ang)*r2);ctx.strokeStyle='#111827';ctx.lineWidth=major?3:1.5;ctx.stroke();}
+ // labels every 5 min
+ ctx.fillStyle='#374151';ctx.font='bold 22px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';for(let i=0;i<totalMinutes;i+=5){const ang=-Math.PI/2+(i/totalMinutes)*Math.PI*2;const r=faceR-48;ctx.fillText(i,cx+Math.cos(ang)*r,cy+Math.sin(ang)*r)}
+ // hand
+ const ang=-Math.PI/2+ratio*Math.PI*2; const handR=faceR-64;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(ang)*handR,cy+Math.sin(ang)*handR);ctx.strokeStyle='#111827';ctx.lineWidth=8;ctx.lineCap='round';ctx.stroke();ctx.beginPath();ctx.arc(cx,cy,12,0,Math.PI*2);ctx.fillStyle='#111827';ctx.fill();ctx.beginPath();ctx.arc(cx+Math.cos(ang)*handR,cy+Math.sin(ang)*handR,14,0,Math.PI*2);ctx.fillStyle='#111827';ctx.fill();
+}
+function setFromPointer(e){const rect=qs('#clockCanvas').getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*800,y=(e.clientY-rect.top)/rect.height*800;let ang=Math.atan2(y-400,x-400)+Math.PI/2;if(ang<0)ang+=Math.PI*2;let mins=ang/(Math.PI*2)*totalMinutes;mins=Math.round(mins);if(mins>=totalMinutes)mins=totalMinutes;elapsed=mins*60;render();}
+const shell=qs('#clockShell');shell.addEventListener('pointerdown',e=>{drag=true;shell.setPointerCapture(e.pointerId);setFromPointer(e)});shell.addEventListener('pointermove',e=>{if(drag)setFromPointer(e)});shell.addEventListener('pointerup',()=>drag=false);shell.addEventListener('pointercancel',()=>drag=false);
+qs('#startStopBtn').onclick=()=>{clearInterval(scheduleWatchId);scheduleWatchId=null;if(running){running=false;clearInterval(timerId);timerId=null;qs('#startStopBtn').textContent='Start'}else{if(elapsed>=totalMinutes*60)elapsed=0;beginTimerLoop()}};
+qs('#resetBtn').onclick=()=>{running=false;clearInterval(timerId);timerId=null;clearInterval(scheduleWatchId);scheduleWatchId=null;elapsed=0;phases=originalPhases.map(p=>({...p}));reserve={...originalReserve};totalMinutes=originalTotalMinutes;extendedPhaseIndex=-1;lastPhaseIndex=-1;qs('#startStopBtn').textContent='Start';qs('#phaseAdjustStatus').textContent='';buildLegend();renderReserve();render();savePlan()};
+function minuteNow(){return Math.max(0,elapsed/60)}
+// Live-Phasenplanung · Unterrichtszeitplan von Stefes.
+// Die Gesamtdauer bleibt fest. Nur noch verfügbare Phasenzeit wird verschoben.
+const MIN_FUTURE_PHASE_MINUTES=1;
+const TIME_EPSILON=1e-8;
+function extensionCapacity(oldIdx){
+ const used=phases.reduce((sum,p)=>sum+p.minutes,0);
+ const free=Math.max(0,totalMinutes-used);
+ return free+phases.slice(oldIdx+1).reduce((sum,p)=>sum+Math.max(0,p.minutes-MIN_FUTURE_PHASE_MINUTES),0);
+}
+function updatePhaseAdjustButtons(idx){
+ const oldBtn=qs('#oldPhaseBtn'),newBtn=qs('#newPhaseBtn');
+ const heldNow=idx===extendedPhaseIndex && minuteNow()<phaseStartMin(idx)+phases[idx].minutes;
+ const oldIdx=idx-1;
+ const latestEnd=oldIdx>=0?phaseStartMin(oldIdx)+phases[oldIdx].minutes+extensionCapacity(oldIdx):0;
+ oldBtn.disabled=idx<=0 || heldNow || elapsed>=totalMinutes*60 || latestEnd<=minuteNow()+TIME_EPSILON;
+ newBtn.disabled=idx>=phases.length || !phases.length || elapsed>=totalMinutes*60;
+ qs('#originalPlanBtn').disabled=!originalPhases.length;
+}
+function finishPhaseAdjustment(message){
+ lastPhaseIndex=-1;
+ buildLegend();renderReserve();render();savePlan();
+ qs('#phaseAdjustStatus').textContent=message;
+}
+function extendPreviousPhase(){
+ if(elapsed>=totalMinutes*60)return;
+ const idx=phaseAt(elapsed),oldIdx=idx-1;
+ if(oldIdx<0 || oldIdx>=phases.length || idx===extendedPhaseIndex)return;
+ const oldEnd=phaseStartMin(oldIdx)+phases[oldIdx].minutes;
+ const desiredEnd=Math.min(totalMinutes,minuteNow()+2);
+ const delta=Math.min(Math.max(0,desiredEnd-oldEnd),extensionCapacity(oldIdx));
+ if(oldEnd+delta<=minuteNow()+TIME_EPSILON){
+  qs('#phaseAdjustStatus').textContent='Keine Verlängerung mehr möglich: Die verbleibenden Phasen brauchen ihre Mindestzeit.';
+  return;
+ }
+ // Freie Reserve zuerst nutzen, danach kommende Phasen der Reihe nach kürzen.
+ const free=Math.max(0,totalMinutes-phases.reduce((sum,p)=>sum+p.minutes,0));
+ let toTake=Math.max(0,delta-free);
+ for(let i=oldIdx+1;i<phases.length && toTake>TIME_EPSILON;i++){
+  const take=Math.min(toTake,Math.max(0,phases[i].minutes-MIN_FUTURE_PHASE_MINUTES));
+  phases[i].minutes-=take;
+  toTake-=take;
+ }
+ phases[oldIdx].minutes+=delta;
+ extendedPhaseIndex=oldIdx;
+ const limited=delta<desiredEnd-oldEnd-TIME_EPSILON;
+ finishPhaseAdjustment(`${phases[oldIdx].name} läuft bis ${format((oldEnd+delta)*60)} weiter. Gesamtdauer: ${prettyMinutes(totalMinutes)} Minuten.${limited?' Verlängerung auf die verfügbare Zeit begrenzt.':''}`);
+}
+function startNextPhaseNow(){
+ if(elapsed>=totalMinutes*60)return;
+ const idx=phaseAt(elapsed);
+ if(idx<0 || idx>=phases.length)return;
+ const newDuration=Math.max(0,minuteNow()-phaseStartMin(idx));
+ const cut=phases[idx].minutes-newDuration;
+ if(cut<=TIME_EPSILON)return;
+ // Exakt am Klick wechseln, auch direkt am Beginn einer Phase.
+ phases[idx].minutes=newDuration;
+ reserve.title=reserve.title||'Didaktische Reserve';
+ extendedPhaseIndex=-1;
+ finishPhaseAdjustment(`${prettyMinutes(cut)} Minuten gewonnen: Die Zeit bleibt am Ende als Reserve. Gesamtdauer: ${prettyMinutes(totalMinutes)} Minuten.`);
+}
+function restoreOriginalSchedule(){
+ if(!originalPhases.length)return;
+ // Nur Zeiten zurücksetzen. Live bearbeitete Notizen, Laufzustand und elapsed bleiben erhalten.
+ phases=originalPhases.map((p,i)=>({...p,notesHtml:phases[i]?.notesHtml??p.notesHtml}));
+ totalMinutes=originalTotalMinutes;
+ extendedPhaseIndex=-1;
+ finishPhaseAdjustment('Originaler Zeitplan wiederhergestellt. Die verstrichene Zeit und deine Notizen bleiben erhalten.');
+}
+qs('#oldPhaseBtn').onclick=extendPreviousPhase;
+qs('#originalPlanBtn').onclick=restoreOriginalSchedule;
+qs('#newPhaseBtn').onclick=startNextPhaseNow;
+
+
+function getPlanLibrary(){try{return JSON.parse(localStorage.getItem('unterrichtszeitplan_library_v1')||'[]')}catch(e){return []}}
+function setPlanLibrary(items){try{localStorage.setItem('unterrichtszeitplan_library_v1',JSON.stringify(items))}catch(e){}}
+function formatSidebarDate(dateStr){if(!dateStr)return 'Ohne Datum';const d=new Date(dateStr+'T12:00:00');return new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}).format(d)}
+function renderPlanSidebars(){
+ const lib=getPlanLibrary().slice().sort((a,b)=>{const ak=(a.lessonDate||'9999-99-99')+' '+(a.lessonStartTime||'99:99');const bk=(b.lessonDate||'9999-99-99')+' '+(b.lessonStartTime||'99:99');return ak.localeCompare(bk)});
+ const html=lib.length?lib.map(p=>{const first=[p.subject||'Ohne Fach',p.topic||'Ohne Thema'].join(' · ');const second=`${formatSidebarDate(p.lessonDate)} · ${p.lessonStartTime||'Ohne Uhrzeit'}`;const pc=p.lessonColor||'#2563eb';return `<button class="sidebar-plan${p.id===currentLibraryId?' active':''}" style="--plan-color:${escapeAttr(pc)}" data-side-plan-id="${escapeAttr(p.id)}"><div class="sidebar-plan-main"><span class="sidebar-dot"></span>${escapeHtml(first)}</div><div class="sidebar-plan-meta">${escapeHtml(second)}</div></button>`}).join(''):'<div class="sidebar-empty">Noch keine gespeicherten Stunden vorhanden.</div>';
+ ['setupSidebarList','lessonSidebarList'].forEach(id=>{const el=qs('#'+id);if(el)el.innerHTML=html});
+ document.querySelectorAll('[data-side-plan-id]').forEach(el=>el.onclick=()=>switchToLibraryPlan(el.dataset.sidePlanId,el.closest('#lessonSidebar')?'lessonScreen':'setupScreen'));
+}
+function toggleSidebar(which){const side=qs('#'+which+'Sidebar');if(!side)return;side.classList.toggle('collapsed');const btn=qs('#'+which+'SidebarToggle');if(btn)btn.textContent=side.classList.contains('collapsed')?'›':'‹';if(!side.classList.contains('collapsed'))renderPlanSidebars()}
+function switchToLibraryPlan(id,targetScreen){
+ if(targetScreen==='lessonScreen'){
+   const idx=phaseAt(Math.min(elapsed,totalMinutes*60-.001));if(idx===phases.length)reserve.notesHtml=qs('#notesArea').innerHTML;else if(phases[idx])phases[idx].notesHtml=qs('#notesArea').innerHTML;
+ }
+ upsertCurrentPlanToLibrary();
+ running=false;clearInterval(timerId);timerId=null;clearInterval(scheduleWatchId);scheduleWatchId=null;
+ loadLibraryPlan(id,targetScreen);
+}
+
+function makeLibraryId(){if(currentLibraryId)return currentLibraryId;const base=[lessonDate,lessonStartTime,subject,topic].join('|');currentLibraryId=base.replace(/[^a-zA-Z0-9äöüÄÖÜß_|:-]/g,'_')+'|'+Date.now();return currentLibraryId}
+function currentPlanSnapshot(){return {id:makeLibraryId(),subject,topic,lessonColor,lessonDate,lessonStartTime,totalMinutes,phases:phases.map(p=>({...p})),reserve:{...reserve},originalTotalMinutes,originalPhases:originalPhases.map(p=>({...p})),originalReserve:{...originalReserve},updatedAt:Date.now()}}
+function upsertCurrentPlanToLibrary(){if(!lessonDate)return;const item=currentPlanSnapshot();let lib=getPlanLibrary();const i=lib.findIndex(x=>x.id===item.id);if(i>=0)lib[i]=item;else lib.push(item);setPlanLibrary(lib);renderPlanSidebars()}
+function hideAllScreens(){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'))}
+function openPlans(returnScreen){plansReturnScreen=returnScreen||'setupScreen';if(returnScreen==='lessonScreen'){if(running){running=false;clearInterval(timerId);timerId=null;qs('#startStopBtn').textContent='Start'}clearInterval(scheduleWatchId);scheduleWatchId=null;}upsertCurrentPlanToLibrary();hideAllScreens();qs('#plansScreen').classList.add('active');calendarCursor=lessonDate?new Date(lessonDate+'T12:00:00'):new Date();renderCalendar()}
+function closePlans(){hideAllScreens();if(plansReturnScreen==='lessonScreen'){qs('#lessonScreen').classList.add('active');syncWithScheduledStart(true);render()}else{qs('#setupScreen').classList.add('active')}}
+function startOfWeek(d){const x=new Date(d);x.setHours(12,0,0,0);const day=(x.getDay()+6)%7;x.setDate(x.getDate()-day);return x}
+function ymd(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
+function plansForDate(dateStr){return getPlanLibrary().filter(p=>p.lessonDate===dateStr).sort((a,b)=>(a.lessonStartTime||'').localeCompare(b.lessonStartTime||''))}
+function planChipHtml(p,month=false){const title=escapeHtml(p.subject||'Unterricht');const topicText=escapeHtml(p.topic||'');const pc=escapeAttr(p.lessonColor||'#2563eb');if(month)return `<div class="month-plan" style="--plan-color:${pc}" data-plan-id="${escapeAttr(p.id)}" title="${title}${topicText?' – '+topicText:''}">${escapeHtml(p.lessonStartTime||'')} ${title}</div>`;return `<div class="plan-chip" style="--plan-color:${pc}" data-plan-id="${escapeAttr(p.id)}"><button class="plan-delete" data-delete-plan-id="${escapeAttr(p.id)}" title="Plan löschen" aria-label="Plan löschen">×</button><div class="plan-time">${escapeHtml(p.lessonStartTime||'Ohne Uhrzeit')}</div><div class="plan-subject">${title}</div>${topicText?`<div class="plan-topic">${topicText}</div>`:''}</div>`}
+function attachPlanOpenHandlers(){document.querySelectorAll('[data-plan-id]').forEach(el=>el.onclick=()=>loadLibraryPlan(el.dataset.planId));document.querySelectorAll('[data-delete-plan-id]').forEach(btn=>btn.onclick=e=>{e.stopPropagation();deleteLibraryPlan(btn.dataset.deletePlanId)})}
+function renderCalendar(){const content=qs('#calendarContent'),lib=getPlanLibrary();qs('#weekViewBtn').classList.toggle('active',calendarMode==='week');qs('#monthViewBtn').classList.toggle('active',calendarMode==='month');if(calendarMode==='week'){const monday=startOfWeek(calendarCursor);const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);qs('#calendarTitle').textContent=`${new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'short'}).format(monday)} – ${new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'short',year:'numeric'}).format(sunday)}`;let html='<div class="week-grid">';for(let i=0;i<7;i++){const d=new Date(monday);d.setDate(monday.getDate()+i);const ds=ymd(d);const today=ds===ymd(new Date());const items=plansForDate(ds);html+=`<div class="day-column${today?' today':''}"><div class="day-head">${new Intl.DateTimeFormat('de-DE',{weekday:'short'}).format(d)}<span class="day-number">${d.getDate()}</span></div>${items.map(p=>planChipHtml(p)).join('')||'<div style="font-size:12px;color:#94a3b8">Keine Pläne</div>'}</div>`}html+='</div>';content.innerHTML=html;}else{const first=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth(),1,12);qs('#calendarTitle').textContent=new Intl.DateTimeFormat('de-DE',{month:'long',year:'numeric'}).format(first);const gridStart=startOfWeek(first);let html='<div class="month-grid">'+['Mo','Di','Mi','Do','Fr','Sa','So'].map(x=>`<div class="month-weekday">${x}</div>`).join('');for(let i=0;i<42;i++){const d=new Date(gridStart);d.setDate(gridStart.getDate()+i);const ds=ymd(d);const muted=d.getMonth()!==first.getMonth();const today=ds===ymd(new Date());const items=plansForDate(ds);html+=`<div class="month-day${muted?' muted':''}${today?' today':''}"><div class="month-date">${d.getDate()}</div>${items.slice(0,3).map(p=>planChipHtml(p,true)).join('')}${items.length>3?`<div style="font-size:10px;color:#64748b">+${items.length-3} weitere</div>`:''}</div>`}html+='</div>';content.innerHTML=html;}if(!lib.length)content.insertAdjacentHTML('beforeend','<div class="plans-empty">Noch keine datierten Unterrichtspläne gespeichert. Erstelle einen Plan mit Datum – dann erscheint er hier automatisch.</div>');attachPlanOpenHandlers()}
+function loadLibraryPlan(id,targetScreen='setupScreen'){const data=getPlanLibrary().find(x=>x.id===id);if(!data)return;currentLibraryId=data.id||'';subject=data.subject||'';topic=data.topic||'';lessonColor=data.lessonColor||'#2563eb';lessonDate=data.lessonDate||'';lessonStartTime=data.lessonStartTime||'';totalMinutes=data.originalTotalMinutes||data.totalMinutes||45;originalTotalMinutes=totalMinutes;phases=(data.originalPhases?.length?data.originalPhases:data.phases||defaults).map(p=>({...p}));originalPhases=phases.map(p=>({...p}));reserve={...(data.originalReserve||data.reserve||{title:'',notesHtml:''})};originalReserve={...reserve};qs('#subjectInput').value=subject;qs('#topicInput').value=topic;qs('#lessonColorInput').value=lessonColor;qs('#lessonDateInput').value=lessonDate;qs('#lessonStartInput').value=lessonStartTime;totalInput.value=totalMinutes;phaseBody.innerHTML='';phases.forEach(p=>addPhaseRow({...p}));const reserveRow=phaseBody.querySelector('.reserve-row'); if(reserve.title||htmlToText(reserve.notesHtml||'').trim()){const rr=reserveRow||addReserveRow(reserve);const rta=rr.querySelector('.reserve-notes-setup');rta.value=htmlToText(reserve.notesHtml||'');rta.dataset.notesHtml=reserve.notesHtml||'';rta.dataset.originalText=rta.value;}else if(reserveRow){reserveRow.remove();}updateSummary();hideAllScreens();elapsed=0;lastPhaseIndex=-1;extendedPhaseIndex=-1;if(targetScreen==='lessonScreen'){qs('#lessonScreen').classList.add('active');buildLegend();renderReserve();syncWithScheduledStart(true);render()}else{qs('#setupScreen').classList.add('active')}renderPlanSidebars();savePlan()}
+function createFreshIndependentPlan(returnToSetup=true){
+ // Aktuellen Plan sichern, bevor ein neuer begonnen wird.
+ if(currentLibraryId && lessonDate)upsertCurrentPlanToLibrary();
+ running=false;clearInterval(timerId);timerId=null;clearInterval(scheduleWatchId);scheduleWatchId=null;
+ currentLibraryId='';subject='';topic='';lessonColor='#2563eb';lessonDate='';lessonStartTime='';elapsed=0;lastPhaseIndex=-1;extendedPhaseIndex=-1;
+ totalMinutes=45;originalTotalMinutes=45;
+ phases=defaults.map(p=>({...p,notesHtml:''}));originalPhases=phases.map(p=>({...p}));
+ reserve={title:'',notesHtml:''};originalReserve={...reserve};
+ qs('#subjectInput').value='';qs('#topicInput').value='';qs('#lessonColorInput').value='#2563eb';qs('#lessonDateInput').value='';qs('#lessonStartInput').value='';totalInput.value=45;
+ phaseBody.innerHTML='';phases.forEach(p=>addPhaseRow({...p}));addReserveRow({notesHtml:''});updateSummary();
+ savePlan();renderPlanSidebars();
+ if(returnToSetup){hideAllScreens();qs('#setupScreen').classList.add('active');}
+}
+function deleteLibraryPlan(id){
+ const lib=getPlanLibrary();const item=lib.find(p=>p.id===id);if(!item)return;
+ const label=[item.subject||'Ohne Fach',item.topic||'Ohne Thema'].join(' · ');
+ if(!confirm(`„${label}“ wirklich löschen?`))return;
+ setPlanLibrary(lib.filter(p=>p.id!==id));
+ if(currentLibraryId===id)currentLibraryId='';
+ renderPlanSidebars();renderCalendar();savePlan();
+}
+function clearForNewPlan(){
+ // Zeitangaben bewusst beibehalten: Gesamtdauer, Datum, Startuhrzeit und Phasenminuten.
+ qs('#subjectInput').value='';
+ qs('#topicInput').value='';
+ subject=''; topic=''; lessonColor='#2563eb'; qs('#lessonColorInput').value='#2563eb'; currentLibraryId='';
+ [...phaseBody.querySelectorAll('tr:not(.reserve-row)')].forEach(tr=>{
+   tr.querySelector('.p-name').value='';
+   const ta=tr.querySelector('.p-notes'); ta.value=''; ta.dataset.notesHtml=''; ta.dataset.originalText='';
+ });
+ const reserveTa=phaseBody.querySelector('.reserve-notes-setup'); if(reserveTa){reserveTa.value='';reserveTa.dataset.notesHtml='';reserveTa.dataset.originalText='';}
+ reserve=reserveTa?{title:'Didaktische Reserve',notesHtml:''}:{title:'',notesHtml:''};
+ originalReserve={...reserve};
+ updateSummary();
+ savePlan();
+}
+qs('#setupSidebarToggle').onclick=()=>toggleSidebar('setup');qs('#lessonSidebarToggle').onclick=()=>toggleSidebar('lesson');
+
+function saveOnlyPlan(){
+  if(!collect()) return;
+  desktopSetTitle();
+  originalPhases=phases.map(p=>({...p}));
+  originalReserve={...reserve};
+  originalTotalMinutes=totalMinutes;
+  savePlan();
+  upsertCurrentPlanToLibrary();
+  desktopSetDirty(false);
+  const btn=qs('#saveOnlyBtn');
+  if(btn){
+    const old=btn.textContent;
+    btn.textContent='Gespeichert ✓';
+    setTimeout(()=>btn.textContent=old,1200);
+  }
+}
+
+
+['#subjectInput','#topicInput','#lessonColorInput','#lessonDateInput','#lessonStartInput','#totalMinutes'].forEach(sel=>{
+  const el=qs(sel); if(el)el.addEventListener('input',()=>desktopSetDirty(true));
+});
+phaseBody.addEventListener('input',()=>desktopSetDirty(true));
+
+qs('#saveOnlyBtn').onclick=saveOnlyPlan;
+qs('#editBtn').onclick=showSetup;qs('#editBottomBtn').onclick=showSetup;qs('#newPlanFromLessonBtn').onclick=()=>createFreshIndependentPlan(true);qs('#newPlanBtn').onclick=()=>{if(confirm('Möchtest du wirklich alle inhaltlichen Felder leeren? Diese Aktion kann nicht rückgängig gemacht werden.')) clearForNewPlan();};qs('#newIndependentPlanBtn').onclick=()=>createFreshIndependentPlan(true);qs('#newPlanFromCalendarBtn').onclick=()=>createFreshIndependentPlan(true);qs('#addPhaseBtn').onclick=()=>addPhaseRow();qs('#createBtn').onclick=createPlan;totalInput.addEventListener('input',updateSummary);
+qs('#plansFromSetupBtn').onclick=()=>openPlans('setupScreen');qs('#plansFromLessonBtn').onclick=()=>openPlans('lessonScreen');qs('#plansBackBtn').onclick=closePlans;qs('#weekViewBtn').onclick=()=>{calendarMode='week';renderCalendar()};qs('#monthViewBtn').onclick=()=>{calendarMode='month';renderCalendar()};qs('#calTodayBtn').onclick=()=>{calendarCursor=new Date();renderCalendar()};qs('#calPrevBtn').onclick=()=>{if(calendarMode==='week')calendarCursor.setDate(calendarCursor.getDate()-7);else calendarCursor.setMonth(calendarCursor.getMonth()-1);renderCalendar()};qs('#calNextBtn').onclick=()=>{if(calendarMode==='week')calendarCursor.setDate(calendarCursor.getDate()+7);else calendarCursor.setMonth(calendarCursor.getMonth()+1);renderCalendar()};
+
+function applyFormat(command,value=null){const area=qs('#notesArea');area.focus();document.execCommand(command,false,value);area.dispatchEvent(new Event('input',{bubbles:true}));}
+qs('#boldBtn').onclick=()=>applyFormat('bold');
+qs('#fontSizeSelect').onchange=e=>applyFormat('fontSize',e.target.value);
+// Schriftfarbauswahl mit gespeicherter Textmarkierung · Autorin: Stefes.
+let closeFontColorPicker=()=>{};
+(function initFontColorPicker(){
+ const area=qs('#notesArea'),panel=qs('#fontColorPanel'),trigger=qs('#fontColorButton');
+ const gradient=qs('#fontSaturation'),handle=qs('#fontSaturationHandle');
+ const hueInput=qs('#fontHueInput'),alphaInput=qs('#fontAlphaInput');
+ const colorInput=qs('#fontColorInput'),opacityInput=qs('#fontOpacityInput'),formatInput=qs('#fontColorFormat');
+ const recentKey='unterrichtszeitplan_schriftfarben_v1';
+ const presets=[["Schwarz", "#000000"], ["Anthrazit", "#262626"], ["Dunkelgrau", "#595959"], ["Grau", "#8c8c8c"], ["Hellgrau", "#bfbfbf"], ["Silbergrau", "#e5e5e5"], ["Weißgrau", "#f5f5f5"], ["Weiß", "#fafafa"], ["Kräftig · Rot", "#ff1630"], ["Kräftig · Orange", "#fa8c16"], ["Kräftig · Gelb", "#fadb14"], ["Kräftig · Grün", "#52c41a"], ["Kräftig · Türkis", "#13a8a8"], ["Kräftig · Blau", "#1677ff"], ["Kräftig · Violett", "#722ed1"], ["Kräftig · Pink", "#eb2f96"], ["Pastell · Rot", "#ffccc7"], ["Pastell · Orange", "#ffe7ba"], ["Pastell · Gelb", "#ffffb8"], ["Pastell · Grün", "#d9f7be"], ["Pastell · Türkis", "#b5f5ec"], ["Pastell · Blau", "#bae0ff"], ["Pastell · Violett", "#efdbff"], ["Pastell · Pink", "#ffd6e7"], ["Hell · Rot", "#ffa39e"], ["Hell · Orange", "#ffd591"], ["Hell · Gelb", "#fffb8f"], ["Hell · Grün", "#b7eb8f"], ["Hell · Türkis", "#87e8de"], ["Hell · Blau", "#91caff"], ["Hell · Violett", "#d3adf7"], ["Hell · Pink", "#ffadd2"], ["Mittel · Rot", "#ff7875"], ["Mittel · Orange", "#ffc069"], ["Mittel · Gelb", "#fff566"], ["Mittel · Grün", "#95de64"], ["Mittel · Türkis", "#5cdbd3"], ["Mittel · Blau", "#69b1ff"], ["Mittel · Violett", "#b37feb"], ["Mittel · Pink", "#ff85c0"], ["Dunkel · Rot", "#a8071a"], ["Dunkel · Orange", "#ad4e00"], ["Dunkel · Gelb", "#ad8b00"], ["Dunkel · Grün", "#237804"], ["Dunkel · Türkis", "#006d75"], ["Dunkel · Blau", "#003eb3"], ["Dunkel · Violett", "#391085"], ["Dunkel · Pink", "#9e1068"], ["Sehr dunkel · Rot", "#820014"], ["Sehr dunkel · Orange", "#612500"], ["Sehr dunkel · Gelb", "#614700"], ["Sehr dunkel · Grün", "#092b00"], ["Sehr dunkel · Türkis", "#002329"], ["Sehr dunkel · Blau", "#001d66"], ["Sehr dunkel · Violett", "#22075e"], ["Sehr dunkel · Pink", "#780650"]];
+ let state={h:217,s:0,v:0,a:1},savedRange=null,applying=false,dragging=false,pickerChanged=false,recent=[];
+ function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
+ function rgbToHsv(r,g,b){
+  r/=255;g/=255;b/=255;
+  const max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;
+  let h=state.h;
+  if(delta){h=(max===r?(g-b)/delta+(g<b?6:0):max===g?(b-r)/delta+2:(r-g)/delta+4)*60}
+  return {h,s:max===0?0:delta/max,v:max};
+ }
+ function hsvToRgb(){
+  const c=state.v*state.s,x=c*(1-Math.abs((state.h/60)%2-1)),m=state.v-c;
+  const channels=state.h<60?[c,x,0]:state.h<120?[x,c,0]:state.h<180?[0,c,x]:state.h<240?[0,x,c]:state.h<300?[x,0,c]:[c,0,x];
+  return channels.map(n=>Math.round((n+m)*255));
+ }
+ function hexValue(){return '#'+hsvToRgb().map(n=>n.toString(16).padStart(2,'0')).join('')}
+ function cssValue(){const rgb=hsvToRgb();return state.a===1?hexValue():`rgba(${rgb.join(', ')}, ${Math.round(state.a*100)/100})`}
+ function setHex(hex,alpha=1){
+  const raw=hex.replace(/^#/,'');
+  const normalized=raw.length===3?raw.split('').map(c=>c+c).join(''):raw;
+  const rgb=[0,2,4].map(i=>parseInt(normalized.slice(i,i+2),16));
+  state={...rgbToHsv(...rgb),a:clamp(alpha,0,1)};
+ }
+ function setCssColor(css){
+  const match=css.match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:\s*[,/]\s*([\d.]+))?\s*\)$/i);
+  if(match){state={...rgbToHsv(...match.slice(1,4).map(Number)),a:match[4]===undefined?1:clamp(Number(match[4]),0,1)}}
+  else if(/^#[a-f\d]{3}([a-f\d]{3})?$/i.test(css)){setHex(css)}
+ }
+ function validRange(range){return range && area.contains(range.startContainer) && area.contains(range.endContainer)}
+ function rememberSelection(){
+  if(applying)return;
+  const selection=window.getSelection();
+  if(selection && selection.rangeCount){const range=selection.getRangeAt(0);if(validRange(range))savedRange=range.cloneRange()}
+ }
+ function updateColorUi(){
+  const hex=hexValue(),css=cssValue(),rgb=hsvToRgb();
+  gradient.style.background=`linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(${state.h},100%,50%))`;
+  handle.style.left=state.s*100+'%';handle.style.top=(1-state.v)*100+'%';
+  gradient.setAttribute('aria-valuenow',String(Math.round(state.s*100)));
+  gradient.setAttribute('aria-valuetext',`${Math.round(state.s*100)} Prozent Sättigung, ${Math.round(state.v*100)} Prozent Helligkeit`);
+  hueInput.value=Math.round(state.h);alphaInput.value=Math.round(state.a*100);opacityInput.value=Math.round(state.a*100);
+  colorInput.value=formatInput.value==='rgb'?rgb.join(', '):hex.toUpperCase();colorInput.removeAttribute('aria-invalid');
+  qs('#fontColorPreview').style.background=css;qs('#fontColorChip').style.background=css;
+  alphaInput.style.background=`linear-gradient(to right,transparent,${hex}),conic-gradient(#ddd 25%,#fff 0 50%,#ddd 0 75%,#fff 0) 0 0/8px 8px`;
+  trigger.setAttribute('aria-label',`Schriftfarbe auswählen: ${hex.toUpperCase()}, ${Math.round(state.a*100)} Prozent Deckkraft`);
+  panel.querySelectorAll('.fc-swatch').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.hex===hex && Number(button.dataset.alpha)===state.a)));
+ }
+ function applyColor(){
+  const focused=document.activeElement;
+  const restoreControl=panel.contains(focused);
+  applying=true;
+  try{
+   area.focus({preventScroll:true});
+   const selection=window.getSelection();
+   if(!validRange(savedRange)){savedRange=document.createRange();savedRange.selectNodeContents(area);savedRange.collapse(false)}
+   selection.removeAllRanges();selection.addRange(savedRange);
+   // CSS-Farben erhalten auch Deckkraft; Fett und Schriftgröße bleiben unverändert.
+   const wasCss=document.queryCommandState('styleWithCSS');
+   try{document.execCommand('styleWithCSS',false,true);document.execCommand('foreColor',false,cssValue())}
+   finally{document.execCommand('styleWithCSS',false,wasCss)}
+   if(selection.rangeCount)savedRange=selection.getRangeAt(0).cloneRange();
+   area.dispatchEvent(new Event('input',{bubbles:true}));
+   pickerChanged=true;qs('#fontColorStatus').textContent='Schriftfarbe übernommen.';
+   if(restoreControl)focused.focus({preventScroll:true});
+  }finally{applying=false}
+ }
+ function makeSwatch(hex,alpha,label){
+  const button=document.createElement('button');button.type='button';button.className='fc-swatch';
+  button.dataset.hex=hex;button.dataset.alpha=String(alpha);
+  button.style.setProperty('--swatch-color',hex);
+  if(alpha<1){const rgb=[0,2,4].map(i=>parseInt(hex.slice(i+1,i+3),16));const rgba=`rgba(${rgb.join(', ')}, ${alpha})`;button.style.background=`linear-gradient(${rgba},${rgba}),conic-gradient(#ddd 25%,#fff 0 50%,#ddd 0 75%,#fff 0) 0 0/8px 8px`} 
+  button.title=label;button.setAttribute('aria-label',label);button.setAttribute('aria-pressed','false');
+  button.addEventListener('click',()=>{setHex(hex,alpha);updateColorUi();applyColor();rememberRecent()});return button;
+ }
+ function renderRecent(){
+  const target=qs('#fontColorRecent');target.replaceChildren();qs('#fontRecentGroup').hidden=recent.length===0;
+  recent.forEach(color=>target.appendChild(makeSwatch(color.hex,color.alpha,`${color.hex.toUpperCase()} · ${Math.round(color.alpha*100)} Prozent Deckkraft`)));
+ }
+ function rememberRecent(){
+  const color={hex:hexValue(),alpha:Math.round(state.a*100)/100};
+  recent=[color,...recent.filter(c=>c.hex!==color.hex || c.alpha!==color.alpha)].slice(0,12);
+  try{localStorage.setItem(recentKey,JSON.stringify(recent))}catch(e){}
+  renderRecent();updateColorUi();pickerChanged=false;
+ }
+ function positionPanel(){
+  if(panel.hidden)return;
+  const rect=trigger.getBoundingClientRect(),width=panel.offsetWidth,height=panel.offsetHeight;
+  panel.style.left=clamp(rect.right-width,12,Math.max(12,window.innerWidth-width-12))+'px';
+  const below=rect.bottom+8;
+  panel.style.top=(below+height<=window.innerHeight-12?below:Math.max(12,rect.top-height-8))+'px';
+ }
+ function openPicker(keyboard=false){
+  rememberSelection();
+  if(validRange(savedRange)){
+   const node=savedRange.startContainer;
+   const element=node.nodeType===Node.ELEMENT_NODE?node:node.parentElement;
+   if(element)setCssColor(getComputedStyle(element).color);
+  }
+  pickerChanged=false;qs('#fontColorStatus').textContent='';
+  panel.hidden=false;trigger.setAttribute('aria-expanded','true');updateColorUi();positionPanel();
+  if(keyboard)qs('#fontSaturation').focus({preventScroll:true});
+ }
+ closeFontColorPicker=(returnFocus=false)=>{
+  if(!panel.hidden && pickerChanged)rememberRecent();
+  panel.hidden=true;trigger.setAttribute('aria-expanded','false');dragging=false;
+  if(returnFocus)trigger.focus({preventScroll:true});
+ };
+ function updateFromPoint(e){
+  const rect=gradient.getBoundingClientRect();if(!rect.width || !rect.height)return;
+  state.s=clamp((e.clientX-rect.left)/rect.width,0,1);state.v=1-clamp((e.clientY-rect.top)/rect.height,0,1);updateColorUi();
+ }
+ trigger.addEventListener('pointerdown',e=>{rememberSelection();e.preventDefault()});
+ trigger.addEventListener('click',e=>{if(panel.hidden)openPicker(e.detail===0);else closeFontColorPicker()});
+ qs('#fontColorClose').addEventListener('click',()=>closeFontColorPicker(true));
+ qs('#fontColorReset').addEventListener('click',()=>{setHex('#1f2937');updateColorUi();applyColor();rememberRecent()});
+ const eyeDropperButton=qs('#fontEyeDropper');eyeDropperButton.disabled=typeof window.EyeDropper!=='function';
+ if(eyeDropperButton.disabled)eyeDropperButton.title='Die Pipette wird in diesem Browser nicht unterstützt.';
+ eyeDropperButton.addEventListener('click',async()=>{
+  if(typeof window.EyeDropper!=='function')return;
+  rememberSelection();
+  try{const result=await new window.EyeDropper().open();setHex(result.sRGBHex);updateColorUi();applyColor();rememberRecent()}
+  catch(error){if(error.name!=='AbortError')qs('#fontColorStatus').textContent='Die Bildschirmfarbe konnte nicht aufgenommen werden.'}
+ });
+ panel.addEventListener('pointerdown',e=>{if(e.target.closest('button'))e.preventDefault()});
+ document.addEventListener('selectionchange',()=>{
+  rememberSelection();
+  if(!applying && panel.hidden){
+   const selection=window.getSelection();
+   if(selection?.rangeCount && validRange(selection.getRangeAt(0))){const node=selection.anchorNode;const element=node?.nodeType===Node.ELEMENT_NODE?node:node?.parentElement;if(element){setCssColor(getComputedStyle(element).color);updateColorUi()}}
+  }
+ });
+ document.addEventListener('pointerdown',e=>{if(!panel.hidden && !panel.contains(e.target) && !trigger.contains(e.target))closeFontColorPicker()});
+ panel.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();closeFontColorPicker(true)}});
+ trigger.addEventListener('keydown',e=>{if(e.key==='Escape')closeFontColorPicker(true)});
+ gradient.addEventListener('pointerdown',e=>{rememberSelection();e.preventDefault();dragging=true;gradient.setPointerCapture(e.pointerId);updateFromPoint(e)});
+ gradient.addEventListener('pointermove',e=>{if(dragging)updateFromPoint(e)});
+ gradient.addEventListener('pointerup',e=>{if(dragging){updateFromPoint(e);dragging=false;applyColor();rememberRecent()}});
+ gradient.addEventListener('pointercancel',()=>{dragging=false;updateColorUi()});
+ gradient.addEventListener('keydown',e=>{
+  const step=e.shiftKey ? .1 : .01;
+  if(e.key==='ArrowRight')state.s=clamp(state.s+step,0,1);
+  else if(e.key==='ArrowLeft')state.s=clamp(state.s-step,0,1);
+  else if(e.key==='ArrowUp')state.v=clamp(state.v+step,0,1);
+  else if(e.key==='ArrowDown')state.v=clamp(state.v-step,0,1);
+  else return;
+  e.preventDefault();updateColorUi();applyColor();
+ });
+ hueInput.addEventListener('input',e=>{state.h=Number(e.target.value);updateColorUi();applyColor()});
+ alphaInput.addEventListener('input',e=>{state.a=Number(e.target.value)/100;updateColorUi();applyColor()});
+ [hueInput,alphaInput,opacityInput].forEach(input=>input.addEventListener('change',()=>{rememberRecent();positionPanel()}));
+ opacityInput.addEventListener('input',e=>{if(e.target.value==='')return;const n=Number(e.target.value);if(Number.isFinite(n)){state.a=clamp(n,0,100)/100;updateColorUi();applyColor()}});
+ formatInput.addEventListener('change',updateColorUi);
+ function commitColorCode(){
+  const text=colorInput.value.trim();let valid=false;
+  if(formatInput.value==='hex'){
+   const raw=text.replace(/^#/,'');
+   if(/^(?:[a-f\d]{3}|[a-f\d]{6}|[a-f\d]{8})$/i.test(raw)){setHex(raw.length===8?raw.slice(0,6):raw,raw.length===8?parseInt(raw.slice(6),16)/255:state.a);valid=true}
+  }else{
+   const rgb=text.split(',').map(v=>v.trim());
+   if(rgb.length===3 && rgb.every(v=>/^\d{1,3}$/.test(v) && Number(v)<=255)){state={...rgbToHsv(...rgb.map(Number)),a:state.a};valid=true}
+  }
+  if(valid){updateColorUi();applyColor();rememberRecent()}
+  else{colorInput.setAttribute('aria-invalid','true');qs('#fontColorStatus').textContent=formatInput.value==='hex'?'Bitte einen gültigen Farbcode eingeben, zum Beispiel #1677FF.':'Bitte drei RGB-Werte von 0 bis 255 eingeben, zum Beispiel 22, 119, 255.'}
+ }
+ colorInput.addEventListener('input',()=>{colorInput.removeAttribute('aria-invalid');qs('#fontColorStatus').textContent=''});
+ colorInput.addEventListener('change',commitColorCode);
+ colorInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commitColorCode()}});
+ opacityInput.addEventListener('change',updateColorUi);
+ window.addEventListener('resize',positionPanel);window.addEventListener('scroll',positionPanel,true);
+ try{const stored=JSON.parse(localStorage.getItem(recentKey)||'[]');if(Array.isArray(stored))recent=stored.filter(c=>c && /^#[a-f\d]{6}$/i.test(c.hex) && Number.isFinite(c.alpha) && c.alpha>=0 && c.alpha<=1).slice(0,12)}catch(e){}
+ const presetTarget=qs('#fontColorPresets');presetTarget.replaceChildren();presets.forEach(([label,hex])=>presetTarget.appendChild(makeSwatch(hex,1,label)));
+ panel.hidden=true;trigger.setAttribute('aria-expanded','false');setHex('#1f2937');renderRecent();updateColorUi();
+})();
+
+
+async function downloadCurrentPlan(){
+ const idx=phaseAt(Math.min(elapsed,totalMinutes*60-.001));
+ if(idx===phases.length){reserve.notesHtml=qs('#notesArea').innerHTML;} else if(phases[idx]){phases[idx].notesHtml=qs('#notesArea').innerHTML;}
+ savePlan();
+ const exportData={
+  subject,topic,lessonColor,lessonDate,lessonStartTime,totalMinutes,
+  phases,reserve,originalTotalMinutes,originalPhases,originalReserve,
+  checkpoint:{elapsed,running,savedAt:Date.now(),extendedPhaseIndex}
+ };
+ let html='<!doctype html>\n'+document.documentElement.outerHTML;
+ const payload=`<script>window.__EXPORTED_PLAN__=${JSON.stringify(exportData).replace(/</g,'\\u003c')};window.__AUTO_OPEN_PLAN__=true;<\/script>`;
+ html=html.replace('<head>','<head>'+payload);
+
+ const safeBase=[subject||'Unterricht',topic||'Zeitplan']
+   .join('_')
+   .replace(/[<>:"/\\|?*\u0000-\u001F]/g,'-')
+   .replace(/\s+/g,'_')
+   .slice(0,90);
+ const filename=(safeBase||'Unterrichtszeitplan')+'_Zwischenstand.html';
+
+ if(window.electronAPI?.saveTextFile){
+   try{
+     const result=await window.electronAPI.saveTextFile({filename,content:html});
+     if(result!==false){qs('#saveStatus').textContent='gespeichert';desktopSetDirty(false);return;}
+   }catch(e){console.error('Native Dateispeicherung fehlgeschlagen:',e);}
+ }
+
+ const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement('a');
+ a.href=url;a.download=filename;
+ document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
+ desktopSetDirty(false);
+}
+qs('#downloadBtn').onclick=downloadCurrentPlan;
+
+// Speicherung der Unterrichtspläne · Autorin: Stefes.
+function savePlan(){
+ try{
+   localStorage.setItem('unterrichtszeitplan_tool_v3',JSON.stringify({
+     subject,topic,lessonColor,lessonDate,lessonStartTime,totalMinutes,phases,reserve,
+     originalTotalMinutes,originalPhases,originalReserve,currentLibraryId
+   }));
+ }catch(e){}
+ if(currentLibraryId&&lessonDate&&phases.length)upsertCurrentPlanToLibrary();
+ desktopSetTitle();
+ desktopSetDirty(false);
+}
+function restore(){let data=window.__EXPORTED_PLAN__||null;if(!data){try{data=JSON.parse(localStorage.getItem('unterrichtszeitplan_tool_v3')||'null')}catch(e){}};subject=data?.subject||'';topic=data?.topic||'';lessonColor=data?.lessonColor||'#2563eb';lessonDate=data?.lessonDate||'';lessonStartTime=data?.lessonStartTime||'';currentLibraryId=data?.currentLibraryId||'';qs('#subjectInput').value=subject;qs('#topicInput').value=topic;qs('#lessonColorInput').value=lessonColor;qs('#lessonDateInput').value=lessonDate;qs('#lessonStartInput').value=lessonStartTime;const arr=data?.originalPhases?.length?data.originalPhases:(data?.phases?.length?data.phases:defaults);totalInput.value=data?.originalTotalMinutes||data?.totalMinutes||45;phaseBody.innerHTML='';arr.forEach(p=>addPhaseRow({...p,notesHtml:p.notesHtml ?? textToHtml(p.notes||'')}));const savedReserve=data?.originalReserve||data?.reserve||{title:'Didaktische Reserve',notesHtml:''};reserve={...savedReserve};originalReserve={...savedReserve};if(savedReserve.title||htmlToText(savedReserve.notesHtml||'').trim())addReserveRow(savedReserve);updateSummary();if(window.__AUTO_OPEN_PLAN__&&data?.phases?.length){setTimeout(()=>{originalPhases=(data.originalPhases?.length?data.originalPhases:arr).map(p=>({...p}));originalTotalMinutes=data.originalTotalMinutes||Number(totalInput.value)||45;phases=data.phases.map(p=>({...p}));reserve={...(data.reserve||savedReserve)};originalReserve={...(data.originalReserve||savedReserve)};totalMinutes=originalTotalMinutes;if(phases.reduce((sum,p)=>sum+p.minutes,0)>totalMinutes+TIME_EPSILON){phases=originalPhases.map((p,i)=>({...p,notesHtml:phases[i]?.notesHtml??p.notesHtml}));}running=false;lastPhaseIndex=-1;extendedPhaseIndex=data?.checkpoint?.extendedPhaseIndex ?? -1;buildLegend();showLesson();
+ const cp=data?.checkpoint;
+ if(cp && Number.isFinite(Number(cp.elapsed))){
+   elapsed=Math.max(0,Math.min(Number(cp.elapsed),totalMinutes*60));
+   if(cp.running && Number.isFinite(Number(cp.savedAt))){elapsed=Math.min(totalMinutes*60,elapsed+Math.max(0,(Date.now()-Number(cp.savedAt))/1000));}
+   render();
+   if(cp.running && elapsed<totalMinutes*60)beginTimerLoop(); else qs('#startStopBtn').textContent='Start';
+ }else{
+   elapsed=0;syncWithScheduledStart(true);render();
+ }
+},0)}}
+restore();
+desktopSetTitle();
+setTimeout(renderPlanSidebars,0);
+
+window.addEventListener('beforeunload',()=>{ try{savePlan();}catch(e){} });
+
+document.addEventListener('keydown',e=>{
+  const mod=e.ctrlKey||e.metaKey;
+  if(!mod)return;
+
+  if(e.key.toLowerCase()==='s'){
+    e.preventDefault();
+    const lessonActive=qs('#lessonScreen').classList.contains('active');
+    if(lessonActive) downloadCurrentPlan();
+    else saveOnlyPlan();
+    return;
+  }
+
+  if(e.key.toLowerCase()==='n'){
+    e.preventDefault();
+    createFreshIndependentPlan(true);
+    return;
+  }
+
+  if(isElectronApp && e.key.toLowerCase()==='r'){
+    e.preventDefault();
+  }
+});
+</script>
+</body>
+</html>
